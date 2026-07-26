@@ -4,18 +4,29 @@ import os
 
 app = Flask(__name__)
 
+FALLBACK_WEATHER = {
+    "lilongwe": {"temp": 22, "humidity": 65, "rainfall": 0, "current_rain": 0},
+    "blantyre": {"temp": 24, "humidity": 70, "rainfall": 0, "current_rain": 0},
+    "mzuzu": {"temp": 20, "humidity": 75, "rainfall": 0, "current_rain": 0},
+    "zomba": {"temp": 23, "humidity": 68, "rainfall": 0, "current_rain": 0},
+    "karonga": {"temp": 26, "humidity": 80, "rainfall": 0, "current_rain": 0},
+    "kasungu": {"temp": 21, "humidity": 60, "rainfall": 0, "current_rain": 0},
+    "mangochi": {"temp": 25, "humidity": 72, "rainfall": 0, "current_rain": 0},
+    "salima": {"temp": 24, "humidity": 70, "rainfall": 0, "current_rain": 0},
+    "dedza": {"temp": 19, "humidity": 78, "rainfall": 0, "current_rain": 0},
+    "thyolo": {"temp": 23, "humidity": 75, "rainfall": 0, "current_rain": 0},
+    "mulanje": {"temp": 22, "humidity": 80, "rainfall": 0, "current_rain": 0},
+    "rumphi": {"temp": 21, "humidity": 65, "rainfall": 0, "current_rain": 0},
+    "nkhata bay": {"temp": 25, "humidity": 82, "rainfall": 0, "current_rain": 0},
+    "ntcheu": {"temp": 20, "humidity": 68, "rainfall": 0, "current_rain": 0},
+    "chikwawa": {"temp": 27, "humidity": 55, "rainfall": 0, "current_rain": 0},
+    "nsanje": {"temp": 28, "humidity": 60, "rainfall": 0, "current_rain": 0},
+}
 
 def get_coordinates(location):
-    """Find latitude and longitude for a location in Malawi."""
     try:
         url = "https://geocoding-api.open-meteo.com/v1/search"
-        params = {
-            "name": location,
-            "count": 1,
-            "language": "en",
-            "format": "json",
-            "countryCode": "MW"
-        }
+        params = {"name": location, "count": 1, "language": "en", "format": "json", "countryCode": "MW"}
         response = requests.get(url, params=params, timeout=10)
         if response.status_code != 200:
             return None
@@ -23,26 +34,18 @@ def get_coordinates(location):
         if "results" not in data or not data["results"]:
             return None
         result = data["results"][0]
-        return {
-            "name": result["name"],
-            "latitude": result["latitude"],
-            "longitude": result["longitude"]
-        }
+        return {"name": result["name"], "latitude": result["latitude"], "longitude": result["longitude"]}
     except Exception:
         return None
 
-
 def get_weather(latitude, longitude):
-    """Get current weather and today's rainfall."""
     try:
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
-            "latitude": latitude,
-            "longitude": longitude,
+            "latitude": latitude, "longitude": longitude,
             "current": "temperature_2m,relative_humidity_2m,precipitation,rain,weather_code",
             "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min",
-            "timezone": "auto",
-            "forecast_days": 7
+            "timezone": "auto", "forecast_days": 7
         }
         response = requests.get(url, params=params, timeout=10)
         if response.status_code != 200:
@@ -51,39 +54,42 @@ def get_weather(latitude, longitude):
     except Exception:
         return None
 
+def get_fallback_weather(location):
+    location_lower = location.lower().strip()
+    if location_lower in FALLBACK_WEATHER:
+        data = FALLBACK_WEATHER[location_lower]
+        return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
+    for district, data in FALLBACK_WEATHER.items():
+        if district in location_lower or location_lower in district:
+            return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
+    return {"temperature": 23, "humidity": 70, "rainfall": 0, "current_rain": 0, "fallback": True}
 
-def generate_advice(crop, weather):
-    """Generate basic agricultural advice."""
-    current = weather["current"]
-    daily = weather["daily"]
-    temperature = current["temperature_2m"]
-    humidity = current["relative_humidity_2m"]
-    current_rain = current["rain"]
-    today_rainfall = daily["precipitation_sum"][0]
+def generate_advice(crop, weather_data, is_fallback=False):
+    temperature = weather_data["temperature"]
+    humidity = weather_data["humidity"]
+    rainfall = weather_data["rainfall"]
+    current_rain = weather_data["current_rain"]
     advice = []
-
+    if is_fallback:
+        advice.append("Weather service is currently unavailable. Using typical seasonal data for this area.")
     if temperature < 10:
         advice.append("The current temperature is low. Monitor crops for cold stress.")
     elif temperature <= 30:
         advice.append("The current temperature is generally suitable for many crops.")
     else:
         advice.append("The current temperature is high. Monitor crops for heat stress and water loss.")
-
-    if today_rainfall == 0:
+    if rainfall == 0:
         advice.append("No significant rainfall is forecast for today. Check soil moisture and consider irrigation if necessary.")
-    elif today_rainfall < 10:
+    elif rainfall < 10:
         advice.append("Light rainfall is expected today. Monitor soil moisture carefully.")
-    elif today_rainfall <= 50:
+    elif rainfall <= 50:
         advice.append("Moderate rainfall is expected today. Conditions may be favorable for crop growth.")
     else:
         advice.append("Heavy rainfall is expected. Watch for waterlogging, soil erosion, and fungal diseases.")
-
     if humidity > 80:
         advice.append("Humidity is high. Monitor crops for fungal diseases, especially if leaves remain wet.")
-
     if current_rain > 0:
         advice.append("Rain is currently being detected. Avoid unnecessary irrigation.")
-
     crop_lower = crop.lower()
     if "maize" in crop_lower:
         advice.append("For maize, monitor soil moisture carefully during critical growth stages such as flowering and grain filling.")
@@ -95,49 +101,54 @@ def generate_advice(crop, weather):
         advice.append("For rice, water management depends on the production system and variety. Monitor field water levels.")
     elif "cassava" in crop_lower:
         advice.append("For cassava, monitor moisture conditions and inspect plants regularly for pests and diseases.")
+    elif "tobacco" in crop_lower:
+        advice.append("For tobacco, ensure proper curing conditions and monitor leaf moisture levels.")
+    elif "soya" in crop_lower or "soybean" in crop_lower:
+        advice.append("For soya beans, maintain consistent moisture during pod filling stage.")
+    elif "sorghum" in crop_lower:
+        advice.append("For sorghum, it is drought-tolerant but benefits from moisture during heading and grain filling.")
+    elif "sweet potato" in crop_lower:
+        advice.append("For sweet potatoes, avoid waterlogging and ensure well-drained soil.")
+    elif "mil" in crop_lower:
+        advice.append("For millet, it is highly drought-tolerant but monitor during early establishment.")
     else:
         advice.append(f"Continue monitoring your {crop} crop and consider local soil, pest, disease, and weather conditions.")
-
-    return {
-        "temperature": temperature,
-        "humidity": humidity,
-        "rainfall": today_rainfall,
-        "current_rain": current_rain,
-        "advice": advice
-    }
-
+    return {"temperature": temperature, "humidity": humidity, "rainfall": rainfall, "current_rain": current_rain, "advice": advice}
 
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = None
     error = None
-
     if request.method == "POST":
         location = request.form["location"]
         crop = request.form["crop"]
-
         try:
             coordinates = get_coordinates(location)
             if coordinates is None:
-                error = f"Could not find the location '{location}'. Try another district or town."
+                weather_data = get_fallback_weather(location)
+                agricultural_advice = generate_advice(crop, weather_data, is_fallback=True)
+                result = {"location": location.title(), "crop": crop, "weather": agricultural_advice}
             else:
                 weather = get_weather(coordinates["latitude"], coordinates["longitude"])
                 if weather is None:
-                    error = "Could not retrieve weather information. The weather service may be temporarily unavailable. Please try again later."
+                    weather_data = get_fallback_weather(location)
+                    agricultural_advice = generate_advice(crop, weather_data, is_fallback=True)
+                    result = {"location": coordinates["name"], "crop": crop, "weather": agricultural_advice}
                 else:
-                    agricultural_advice = generate_advice(crop, weather)
-                    result = {
-                        "location": coordinates["name"],
-                        "crop": crop,
-                        "weather": agricultural_advice
+                    current = weather["current"]
+                    daily = weather["daily"]
+                    weather_data = {
+                        "temperature": current["temperature_2m"],
+                        "humidity": current["relative_humidity_2m"],
+                        "rainfall": daily["precipitation_sum"][0],
+                        "current_rain": current["rain"],
+                        "fallback": False
                     }
-        except requests.RequestException:
-            error = "Unable to connect to the weather service. Check your internet connection."
+                    agricultural_advice = generate_advice(crop, weather_data, is_fallback=False)
+                    result = {"location": coordinates["name"], "crop": crop, "weather": agricultural_advice}
         except Exception as e:
             error = f"An unexpected error occurred: {e}"
-
     return render_template("index.html", result=result, error=error)
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
