@@ -4,23 +4,10 @@ import os
 
 app = Flask(__name__)
 
-FALLBACK_WEATHER = {
-    "lilongwe": {"temp": 22, "humidity": 65, "rainfall": 0, "current_rain": 0},
-    "blantyre": {"temp": 24, "humidity": 70, "rainfall": 0, "current_rain": 0},
-    "mzuzu": {"temp": 20, "humidity": 75, "rainfall": 0, "current_rain": 0},
-    "zomba": {"temp": 23, "humidity": 68, "rainfall": 0, "current_rain": 0},
-    "karonga": {"temp": 26, "humidity": 80, "rainfall": 0, "current_rain": 0},
-    "kasungu": {"temp": 21, "humidity": 60, "rainfall": 0, "current_rain": 0},
-    "mangochi": {"temp": 25, "humidity": 72, "rainfall": 0, "current_rain": 0},
-    "salima": {"temp": 24, "humidity": 70, "rainfall": 0, "current_rain": 0},
-    "dedza": {"temp": 19, "humidity": 78, "rainfall": 0, "current_rain": 0},
-    "thyolo": {"temp": 23, "humidity": 75, "rainfall": 0, "current_rain": 0},
-    "mulanje": {"temp": 22, "humidity": 80, "rainfall": 0, "current_rain": 0},
-    "rumphi": {"temp": 21, "humidity": 65, "rainfall": 0, "current_rain": 0},
-    "nkhata bay": {"temp": 25, "humidity": 82, "rainfall": 0, "current_rain": 0},
-    "ntcheu": {"temp": 20, "humidity": 68, "rainfall": 0, "current_rain": 0},
-    "chikwawa": {"temp": 27, "humidity": 55, "rainfall": 0, "current_rain": 0},
-    "nsanje": {"temp": 28, "humidity": 60, "rainfall": 0, "current_rain": 0},
+SEASONAL_DATA = {
+    "lilongwe": {1: {"t":24,"h":75,"r":180,"cr":5,"s":"Rainy season - heavy rains"}, 2: {"t":24,"h":78,"r":160,"cr":4,"s":"Rainy season"}, 3: {"t":23,"h":72,"r":100,"cr":3,"s":"End rainy season"}, 4: {"t":22,"h":65,"r":30,"cr":1,"s":"Cool dry - irrigation needed"}, 5: {"t":20,"h":60,"r":10,"cr":0,"s":"Cool dry - minimal rain"}, 6: {"t":18,"h":58,"r":5,"cr":0,"s":"Cold dry - protect crops"}, 7: {"t":19,"h":60,"r":3,"cr":0,"s":"Cold dry - irrigation essential"}, 8: {"t":21,"h":62,"r":2,"cr":0,"s":"Warming up - prepare planting"}, 9: {"t":24,"h":65,"r":5,"cr":0,"s":"Hot dry - early planting"}, 10: {"t":27,"h":68,"r":20,"cr":1,"s":"Hot dry - first rains soon"}, 11: {"t":27,"h":72,"r":80,"cr":3,"s":"Rainy starts - plant now"}, 12: {"t":25,"h":74,"r":150,"cr":4,"s":"Rainy season - active growing"}},
+    "blantyre": {1: {"t":26,"h":78,"r":200,"cr":6,"s":"Rainy - heavy rains"}, 2: {"t":26,"h":80,"r":180,"cr":5,"s":"Rainy season"}, 3: {"t":25,"h":75,"r":120,"cr":4,"s":"End rainy season"}, 4: {"t":24,"h":68,"r":40,"cr":1,"s":"Cool dry"}, 5: {"t":22,"h":62,"r":15,"cr":0,"s":"Cool dry"}, 6: {"t":20,"h":60,"r":8,"cr":0,"s":"Cold dry"}, 7: {"t":21,"h":62,"r":5,"cr":0,"s":"Cold dry"}, 8: {"t":23,"h":64,"r":4,"cr":0,"s":"Warming up"}, 9: {"t":26,"h":68,"r":8,"cr":0,"s":"Hot dry"}, 10: {"t":29,"h":70,"r":25,"cr":1,"s":"Hot dry"}, 11: {"t":28,"h":74,"r":90,"cr":3,"s":"Rainy starts"}, 12: {"t":27,"h":76,"r":170,"cr":5,"s":"Rainy season"}},
+    "mzuzu": {1: {"t":22,"h":82,"r":220,"cr":7,"s":"Rainy - very wet"}, 2: {"t":22,"h":84,"r":200,"cr":6,"s":"Rainy season"}, 3: {"t":21,"h":80,"r":150,"cr":5,"s":"End rainy"}, 4: {"t":20,"h":75,"r":50,"cr":2,"s":"Cool dry"}, 5: {"t":18,"h":70,"r":20,"cr":0,"s":"Cool dry"}, 6: {"t":16,"h":68,"r":10,"cr":0,"s":"Cold dry"}, 7: {"t":17,"h":70,"r":8,"cr":0,"s":"Cold dry"}, 8: {"t":19,"h":72,"r":6,"cr":0,"s":"Warming up"}, 9: {"t":22,"h":75,"r":10,"cr":0,"s":"Hot dry"}, 10: {"t":25,"h":78,"r":30,"cr":1,"s":"Hot dry"}, 11: {"t":24,"h":80,"r":100,"cr":4,"s":"Rainy starts"}, 12: {"t":23,"h":82,"r":190,"cr":6,"s":"Rainy season"}},
 }
 
 def get_coordinates(location):
