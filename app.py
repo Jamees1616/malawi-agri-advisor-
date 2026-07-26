@@ -43,13 +43,19 @@ def get_weather(latitude, longitude):
 
 def get_fallback_weather(location):
     location_lower = location.lower().strip()
+    current_month = datetime.now().month
+    
     if location_lower in SEASONAL_DATA:
-        data = SEASONAL_DATA[location_lower]
-        return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
-    for district, data in SEASONAL_DATA.items():
+        data = SEASONAL_DATA[location_lower][current_month]
+        return {"temperature": data["t"], "humidity": data["h"], "rainfall": data["r"], "current_rain": data["cr"], "season_note": data["s"], "fallback": True, "source": f"Seasonal data for {datetime.now().strftime('%B')}"}
+    
+    for district, monthly_data in SEASONAL_DATA.items():
         if district in location_lower or location_lower in district:
-            return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
-    return {"temperature": 23, "humidity": 70, "rainfall": 0, "current_rain": 0, "fallback": True}
+            data = monthly_data[current_month]
+            return {"temperature": data["t"], "humidity": data["h"], "rainfall": data["r"], "current_rain": data["cr"], "season_note": data["s"], "fallback": True, "source": f"Seasonal data for {datetime.now().strftime('%B')}"}
+    
+    data = SEASONAL_DATA["lilongwe"][current_month]
+    return {"temperature": data["t"], "humidity": data["h"], "rainfall": data["r"], "current_rain": data["cr"], "season_note": data["s"], "fallback": True, "source": f"Average seasonal data for {datetime.now().strftime('%B')}"}
 
 def generate_advice(crop, weather_data, is_fallback=False):
     temperature = weather_data["temperature"]
