@@ -1,38 +1,8 @@
 from flask import Flask, render_template, request
-import requests\nimport json\nimport time\nfrom datetime import datetime
+import requests
 import os
 
 app = Flask(__name__)
-
-CACHE_DIR = "/tmp/weather_cache"
-if not os.path.exists(CACHE_DIR):
-    os.makedirs(CACHE_DIR)
-
-def get_cache_key(location):
-    safe_name = location.lower().strip().replace(" ", "_")
-    return os.path.join(CACHE_DIR, f"{safe_name}.json")
-
-def get_cached_weather(location):
-    cache_file = get_cache_key(location)
-    if not os.path.exists(cache_file):
-        return None
-    try:
-        with open(cache_file, "r") as f:
-            data = json.load(f)
-        if time.time() - data.get("timestamp", 0) < 3600:
-            return data["weather"]
-    except Exception:
-        pass
-    return None
-
-def save_cached_weather(location, weather_data):
-    cache_file = get_cache_key(location)
-    try:
-        with open(cache_file, "w") as f:
-            json.dump({"timestamp": time.time(), "weather": weather_data}, f)
-    except Exception:
-        pass
-
 
 FALLBACK_WEATHER = {
     "lilongwe": {"temp": 22, "humidity": 65, "rainfall": 0, "current_rain": 0},
