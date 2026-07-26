@@ -43,10 +43,10 @@ def get_weather(latitude, longitude):
 
 def get_fallback_weather(location):
     location_lower = location.lower().strip()
-    if location_lower in FALLBACK_WEATHER:
-        data = FALLBACK_WEATHER[location_lower]
+    if location_lower in SEASONAL_DATA:
+        data = SEASONAL_DATA[location_lower]
         return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
-    for district, data in FALLBACK_WEATHER.items():
+    for district, data in SEASONAL_DATA.items():
         if district in location_lower or location_lower in district:
             return {"temperature": data["temp"], "humidity": data["humidity"], "rainfall": data["rainfall"], "current_rain": data["current_rain"], "fallback": True}
     return {"temperature": 23, "humidity": 70, "rainfall": 0, "current_rain": 0, "fallback": True}
